@@ -156,15 +156,16 @@ class TranslateView(discord.ui.View):
             await interaction.response.send_message("❌ Ce panneau ne t'appartient pas.", ephemeral=True)
             return
 
-        session = active_sessions.pop(self.message_id, None)
+        session = active_sessions.get(self.message_id)
         if not session:
             await interaction.response.send_message("❌ Session expirée.", ephemeral=True)
             return
 
         if "selected_values" not in session:
-            await interaction.response.send_message("⚠️ Sélectionne d'abord une langue ou la Vérité !", ephemeral=True)
-            active_sessions[self.message_id] = session
+            await interaction.response.send_message("⚠️ Sélectionne d'abord une langue ou la Vérité dans le menu !", ephemeral=True)
             return
+
+        active_sessions.pop(self.message_id, None)
 
         await interaction.response.defer(ephemeral=True)
 
@@ -260,4 +261,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
-    
+            
