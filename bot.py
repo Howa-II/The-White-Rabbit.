@@ -1,15 +1,16 @@
 import discord
 from discord.ext import commands
-import anthropic
+import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 LANG_EMOJIS = {
     "🇬🇧": "English",
@@ -68,13 +69,8 @@ def process_translation(text: str, target_lang: str | None, mode: str) -> tuple[
             f"Text: {text}"
         )
 
-    response = anthropic_client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=300,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    lines = response.content[0].text.strip().split("\n")
+    response = model.generate_content(prompt)
+    lines = response.text.strip().split("\n")
     source_lang = None
     result = ""
 
@@ -148,7 +144,6 @@ class TranslateView(discord.ui.View):
             await interaction.response.send_message("⚠️ Please select a language or Back Thought first!", ephemeral=True)
             return
 
-        # Fermer le panneau immédiatement
         await interaction.response.edit_message(content="⏳ Processing...", view=None)
         self.stop()
 
@@ -168,7 +163,6 @@ class TranslateView(discord.ui.View):
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
-
                 if source_lang == target_lang:
                     reply = f"{source_emoji} *(Already in {source_lang}.)*\n*(by {translator})*"
                 else:
@@ -245,3 +239,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
+    
