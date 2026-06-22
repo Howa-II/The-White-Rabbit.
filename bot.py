@@ -79,10 +79,10 @@ _all_langs = list(LANG_EMOJIS.items())
 # Select 1: Back Thought only
 _OPTIONS_BT = [discord.SelectOption(label="🔎 Back Thought", value="TRUTH", description="Reveals the hidden truth")]
 
-# Select 2: Group A — first 25 languages
+# Select 2: Group A — American English → Italian (25 langues)
 _OPTIONS_A = [discord.SelectOption(label=f"{e} {l}", value=e) for e, l in _all_langs[:25]]
 
-# Select 3: Group B — last 25 languages
+# Select 3: Group B — Japanese → Vietnamese (25 langues)
 _OPTIONS_B = [discord.SelectOption(label=f"{e} {l}", value=e) for e, l in _all_langs[25:]]
 
 _SELECT_A_KEYS = set(e for e, _ in _all_langs[:25])
@@ -158,7 +158,7 @@ class TranslateView(discord.ui.View):
 
         # Row 1: Group A
         select_a = discord.ui.Select(
-            placeholder="Group A — American English → Irish",
+            placeholder="Group A — American English → Italian",
             min_values=1,
             max_values=1,
             options=_OPTIONS_A,
@@ -169,7 +169,7 @@ class TranslateView(discord.ui.View):
 
         # Row 2: Group B
         select_b = discord.ui.Select(
-            placeholder="Group B — Italian → Vietnamese",
+            placeholder="Group B — Japanese → Vietnamese",
             min_values=1,
             max_values=1,
             options=_OPTIONS_B,
@@ -188,7 +188,6 @@ class TranslateView(discord.ui.View):
         return ' + '.join(display) if display else 'None'
 
     def _update_lang(self, new_emoji, from_keys):
-        # Remove any previous lang from this group, keep others
         prev = [v for v in self.selected_values if v not in from_keys]
         self.selected_values = prev + [new_emoji]
 
@@ -196,7 +195,6 @@ class TranslateView(discord.ui.View):
         if interaction.user.id != self.invoker_id:
             await interaction.response.send_message("❌ This panel is not yours.", ephemeral=True)
             return
-        # Toggle Back Thought
         if "TRUTH" in self.selected_values:
             self.selected_values.remove("TRUTH")
         else:
@@ -335,4 +333,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
-                
+                        
