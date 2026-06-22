@@ -222,6 +222,7 @@ class TranslateView(discord.ui.View):
             await interaction.response.send_message("⚠️ Please select a language or Back Thought first!", ephemeral=True)
             return
 
+        # Correction : On utilise edit_message pour passer à l'état de chargement
         await interaction.response.edit_message(content="⏳ Processing...", view=None)
         self.stop()
 
@@ -238,7 +239,7 @@ class TranslateView(discord.ui.View):
                 source_lang, result_text = process_translation(self.original_text, target_lang, "translate")
 
                 if source_lang is None:
-                    await interaction.edit_original_response(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
+                    await interaction.message.edit(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
@@ -254,7 +255,7 @@ class TranslateView(discord.ui.View):
                 source_lang, result_text = process_translation(self.original_text, None, "truth")
 
                 if source_lang is None:
-                    await interaction.edit_original_response(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
+                    await interaction.message.edit(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
                     return
 
                 reply = f"{result_text}\nRevealed by {translator}"
@@ -265,7 +266,7 @@ class TranslateView(discord.ui.View):
                 source_lang, truth_text = process_translation(self.original_text, None, "truth")
 
                 if source_lang is None:
-                    await interaction.edit_original_response(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
+                    await interaction.message.edit(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
@@ -279,14 +280,14 @@ class TranslateView(discord.ui.View):
                     reply = f"{source_emoji} {translated_truth}\nRevealed and Translated by {translator}"
 
             else:
-                await interaction.edit_original_response(content="❌ Invalid combination.")
+                await interaction.message.edit(content="❌ Invalid combination.")
                 return
 
             await self.message_ref.reply(reply)
-            await interaction.edit_original_response(content="✅ Done!")
+            await interaction.message.edit(content="✅ Done!")
 
         except Exception as e:
-            await interaction.edit_original_response(content=f"❌ Error: {str(e)}")
+            await interaction.message.edit(content=f"❌ Error: {str(e)}")
 
     @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.danger, row=2)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -328,3 +329,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
+    
