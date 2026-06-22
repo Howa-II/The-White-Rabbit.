@@ -138,10 +138,10 @@ class TranslateView(discord.ui.View):
             options=options1,
             row=0
         )
-        select1.callback = self.select_callback
+        select1.callback = self.select1_callback
         self.add_item(select1)
 
-        # Select 2: remaining languages (25 options)
+        # Select 2: remaining languages (26 options)
         options2 = []
         for emoji, lang in all_langs[24:]:
             options2.append(discord.SelectOption(label=f"{emoji} {lang}", value=emoji))
@@ -153,10 +153,10 @@ class TranslateView(discord.ui.View):
             options=options2,
             row=1
         )
-        select2.callback = self.select_callback
+        select2.callback = self.select2_callback
         self.add_item(select2)
 
-    async def select_callback(self, interaction: discord.Interaction):
+    async def select1_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.invoker_id:
             await interaction.response.send_message("❌ This panel is not yours.", ephemeral=True)
             return
@@ -164,24 +164,40 @@ class TranslateView(discord.ui.View):
         new_values = interaction.data["values"]
         new_lang_values = [v for v in new_values if v != "TRUTH"]
 
-        # Keep TRUTH from previous selection if it was in Select A
-        has_truth = "TRUTH" in self.selected_values or "TRUTH" in new_values
+        # Keep lang from Select B if already chosen
+        prev_lang_b = [v for v in self.selected_values if v != "TRUTH" and v not in dict(list(LANG_EMOJIS.items())[:24])]
 
-        # Keep lang from previous selection if it came from the other select
-        prev_lang = [v for v in self.selected_values if v != "TRUTH"]
+        has_truth = "TRUTH" in new_values
+        final_lang = new_lang_values if new_lang_values else prev_lang_b
+        final_truth = ["TRUTH"] if has_truth else []
 
-        # New selection replaces previous lang, but keeps TRUTH if it was set
-        if new_lang_values:
-            final_lang = new_lang_values
-            final_truth = ["TRUTH"] if has_truth and "TRUTH" not in new_values else (["TRUTH"] if "TRUTH" in new_values else [])
-        else:
-            # Only TRUTH selected in this interaction
-            final_lang = prev_lang
-            final_truth = ["TRUTH"] if "TRUTH" in new_values else []
+        self.selected_values = final_truth + final_lang
 
-        if len(final_lang) > 1:
-            await interaction.response.send_message("❌ Choose only one language at a time.", ephemeral=True)
+        display = []
+        if final_truth:
+            display.append("🔎 Back Thought")
+        for v in final_lang:
+            display.append(f"{v} {LANG_EMOJIS[v]}")
+
+        await interaction.response.edit_message(
+            content=f"## [ \"TRANSLATER\". ] *\n**Message:** *{self.original_text[:80]}*\n\n**Selection:** {' + '.join(display) if display else 'None'}\n\nConfirm with ✅",
+            view=self
+        )
+
+    async def select2_callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.invoker_id:
+            await interaction.response.send_message("❌ This panel is not yours.", ephemeral=True)
             return
+
+        new_values = interaction.data["values"]
+
+        # Keep TRUTH and any lang from Select A if already chosen
+        prev_truth = ["TRUTH"] if "TRUTH" in self.selected_values else []
+        prev_lang_a = [v for v in self.selected_values if v != "TRUTH" and v in dict(list(LANG_EMOJIS.items())[:24])]
+
+        # Select B replaces lang selection, keeps TRUTH
+        final_lang = new_values
+        final_truth = prev_truth
 
         self.selected_values = final_truth + final_lang
 
@@ -312,4 +328,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
-        
+    
