@@ -243,7 +243,6 @@ class TranslateView(discord.ui.View):
         has_truth = "TRUTH" in values
         lang_values = [v for v in values if v != "TRUTH"]
         translator = interaction.user.mention
-        supported_list = ", ".join(LANG_EMOJIS.values())
 
         try:
             if not has_truth and len(lang_values) == 1:
@@ -251,7 +250,7 @@ class TranslateView(discord.ui.View):
                 source_lang, result_text = process_translation(self.original_text, target_lang, "translate")
 
                 if source_lang is None:
-                    await interaction.edit_original_response(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
+                    await interaction.edit_original_response(content="❌ Language Not Enregistered")
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
@@ -264,7 +263,7 @@ class TranslateView(discord.ui.View):
                 source_lang, result_text = process_translation(self.original_text, None, "truth")
 
                 if source_lang is None:
-                    await interaction.edit_original_response(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
+                    await interaction.edit_original_response(content="❌ Language Not Enregistered")
                     return
 
                 reply = f"{result_text}\nRevealed by {translator}"
@@ -274,7 +273,7 @@ class TranslateView(discord.ui.View):
                 source_lang, truth_text = process_translation(self.original_text, None, "truth")
 
                 if source_lang is None:
-                    await interaction.edit_original_response(content=f"❌ **Language not registered.**\n**Supported:** {supported_list}")
+                    await interaction.edit_original_response(content="❌ Language Not Enregistered")
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
@@ -286,7 +285,6 @@ class TranslateView(discord.ui.View):
                     reply = f"{source_emoji} {translated_truth}\nRevealed and Translated by {translator}"
 
             else:
-                # Updated error message per requirements
                 await interaction.edit_original_response(content="❌ Invalid Combination")
                 return
 
@@ -308,7 +306,7 @@ class TranslateView(discord.ui.View):
 @bot.tree.context_menu(name="TRANSLATER")
 async def translate_context_menu(interaction: discord.Interaction, message: discord.Message):
     if not message.content.strip():
-        await interaction.response.send_message("❌ This Message is not Compatible with the Application [ \"TRANSLATER\". ] *", ephemeral=True)
+        await interaction.response.send_message("❌ This Message is Not Compatible with the Application [ \"TRANSLATER\". ] *", ephemeral=True)
         return
 
     view = TranslateView(
@@ -336,4 +334,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
-    
+            
