@@ -247,7 +247,7 @@ class TranslateView(discord.ui.View):
 
         if not self.selected_values:
             # Règle : Émoji ⚠️ tout seul sur sa première ligne
-            await interaction.response.send_message("⚠️\nPlease,\nSelect at least one Option first", ephemeral=True)
+            await interaction.response.send_message("⚠️\nPlease,\nSelect At Least One Option first", ephemeral=True)
             return
 
         await interaction.response.edit_message(content="⏳ Processing . . .", view=None)
