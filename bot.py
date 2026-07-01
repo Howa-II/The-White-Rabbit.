@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from google import genai
+from google.genai.errors import APIError # Pour attraper l'erreur de quota
 import os
 import asyncio
 from dotenv import load_dotenv
@@ -32,7 +33,7 @@ LANG_EMOJIS = {
     "🇨🇿": "Čeština",
     "🇩🇰": "Dansk",
     "🇳🇱": "Nederlands",
-    "🇪🇬": "اللهجة المصرية",
+    "🇪🇬": "العربية المصرية",
     "🇫🇮": "Suomi",
     "🇫🇷": "Français",
     "🇩🇪": "Deutsch",
@@ -42,19 +43,19 @@ LANG_EMOJIS = {
     "🇭🇺": "Magyar",
     "🇮🇸": "Íslenska",
     "🇮🇩": "Bahasa Indonesia",
-    "🇮🇶": "اللهجة العراقية",
+    "🇮🇶": "العربية العراقية",
     "🇮🇪": "Gaeilge",
     "🇮🇹": "Italiano",
     "🇯🇵": "日本語",
     "🇬🇱": "Kalaallisut",
     "🇰🇷": "한국어",
-    "🇱🇧": "اللهجة اللبنانية",
-    "🇱🇾": "اللهجة الليبية",
+    "🇱🇧": "العربية اللبنانية",
+    "🇱🇾": "العربية الليبية",
     "🇩🇿": "الدارجة المغربية",
     "🇲🇾": "Bahasa Melayu",
     "🇲🇽": "Español Mexicano",
     "🇳🇴": "Norsk",
-    "🇮🇷": "فارسی",
+    "🇮🇷": "فarsi",
     "🇵🇱": "Polski",
     "🇵🇹": "Português",
     "🇨🇦": "Français Québécois",
@@ -62,7 +63,7 @@ LANG_EMOJIS = {
     "🇷🇺": "Русский",
     "🇷🇸": "Српски",
     "🇪🇸": "Español",
-    "🇸🇩": "اللهجة السودانية",
+    "🇸🇩": "العربية السودانية",
     "🇸🇪": "Svenska",
     "🇵🇭": "Tagalog",
     "🇹🇭": "ไทย",
@@ -106,7 +107,7 @@ def process_translation(text: str, target_lang: str | None, mode: str) -> tuple[
     else:
         lang_instruction = f"in {target_lang}" if target_lang else "in the same language as the original text"
         script_instruction = f"using the native script/alphabet of {target_lang}" if target_lang else "using the native script/alphabet of the original text"
-        if target_lang and "ⵜⴰⵎⴰざⵉⵖⵜ" in target_lang:
+        if target_lang and "ⵜⴰⵎⴰⵣⵉⵖⵜ" in target_lang:
             script_instruction = "exclusively using the Neo-Tifinagh alphabet (ⵜⵉⴼⵉⵏⴰⵖ)"
             
         prompt = (
@@ -195,11 +196,9 @@ class TranslateView(discord.ui.View):
         return ' + '.join(display) if display else None
 
     def _update_lang(self, new_emoji, from_keys):
-        # Si la langue sélectionnée était déjà présente, on l'annule (on la retire)
         if new_emoji in self.selected_values:
             self.selected_values.remove(new_emoji)
         else:
-            # Sinon, on supprime d'abord toute autre langue issue du même groupe et on ajoute la nouvelle
             prev = [v for v in self.selected_values if v not in from_keys]
             self.selected_values = prev + [new_emoji]
 
@@ -207,7 +206,6 @@ class TranslateView(discord.ui.View):
         display_str = self._build_display()
         
         if display_str is None:
-            # S'il n'y a plus aucune sélection, on reaffiche le message d'origine exact
             content = f"## [ \"TRANSLATER\". ] *\n**Message :** *{self.original_text[:80]}{'...' if len(self.original_text) > 80 else ''}*\n\nPlease,\nSelect At Least one Option, then Confirm"
         else:
             content = f"## [ \"TRANSLATER\". ] *\n**Message :** *{self.original_text[:80]}*\n\n**Selection :** {display_str}\n\nConfirm"
@@ -269,7 +267,8 @@ class TranslateView(discord.ui.View):
                 source_lang, result_text, inter_text = process_translation(self.original_text, target_lang, "translate")
 
                 if source_lang is None:
-                    await self.message_ref.reply("❌ Language Not Enregistered")
+                    await interaction.followup.send("❌ ERROR", ephemeral=True)
+                    await interaction.followup.send("Language Not Enregistered", ephemeral=True)
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
@@ -282,7 +281,8 @@ class TranslateView(discord.ui.View):
                 source_lang, result_text, _ = process_translation(self.original_text, None, "truth")
 
                 if source_lang is None:
-                    await self.message_ref.reply("❌ Language Not Enregistered")
+                    await interaction.followup.send("❌ ERROR", ephemeral=True)
+                    await interaction.followup.send("Language Not Enregistered", ephemeral=True)
                     return
 
                 reply = f"{result_text}\nRevealed by {translator}"
@@ -292,7 +292,8 @@ class TranslateView(discord.ui.View):
                 source_lang, truth_text, _ = process_translation(self.original_text, None, "truth")
 
                 if source_lang is None:
-                    await self.message_ref.reply("❌ Language Not Enregistered")
+                    await interaction.followup.send("❌ ERROR", ephemeral=True)
+                    await interaction.followup.send("Language Not Enregistered", ephemeral=True)
                     return
 
                 source_emoji = LANG_TO_EMOJI.get(source_lang, "🏳️")
@@ -305,18 +306,38 @@ class TranslateView(discord.ui.View):
                     reply = format_reply_with_emoji(source_emoji, translated_truth, inter_text=inter_text, suffix=f"Revealed and Translated by {translator}", require_inter=True)
 
             else:
-                await self.message_ref.reply("❌ Invalid Combination")
+                await interaction.followup.send("❌ ERROR", ephemeral=True)
+                await interaction.followup.send("Invalid Combination", ephemeral=True)
                 return
 
-            await self.message_ref.reply("DONE ! ✅")
             await self.message_ref.reply(reply)
             await interaction.edit_original_response(content="DONE ! ✅")
 
-        except Exception as e:
-            err_msg = "⚠️ Please, Try Again"
-            await self.message_ref.reply(err_msg)
+        except APIError as api_err:
+            # Vérification si l'erreur provient d'un quota dépassé (Code 429 ou RESOURCE_EXHAUSTED)
+            if api_err.code == 429 or "RESOURCE_EXHAUSTED" in str(api_err):
+                await interaction.followup.send("❌ ERROR", ephemeral=True)
+                await interaction.followup.send("⚠️ Please, your Plan Limit has been Reached", ephemeral=True)
+                try:
+                    await interaction.edit_original_response(content="❌ ERROR")
+                except Exception:
+                    pass
+                return
+
+            # Autre erreur API standard
+            await interaction.followup.send("❌ ERROR", ephemeral=True)
+            await interaction.followup.send("⚠️ Please, Try Again", ephemeral=True)
             try:
-                await interaction.edit_original_response(content=err_msg)
+                await interaction.edit_original_response(content="❌ ERROR")
+            except Exception:
+                pass
+
+        except Exception as e:
+            # Erreur globale de script
+            await interaction.followup.send("❌ ERROR", ephemeral=True)
+            await interaction.followup.send("⚠️ Please, Try Again", ephemeral=True)
+            try:
+                await interaction.edit_original_response(content="❌ ERROR")
             except Exception:
                 pass
 
@@ -325,7 +346,9 @@ class TranslateView(discord.ui.View):
         if interaction.user.id != self.invoker_id:
             await interaction.response.send_message("❌ This panel does not belong to you.", ephemeral=True)
             return
-        await interaction.response.edit_message(content="❌ Cancelled", view=None)
+        
+        await interaction.response.edit_message(content="DONE ! ✅", view=None)
+        await interaction.followup.send("❌ Cancelled", ephemeral=True)
         self.stop()
 
 
