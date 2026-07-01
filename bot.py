@@ -28,7 +28,7 @@ LANG_EMOJIS = {
     "🇲🇾": "Bahasa Melayu",
     "🇬🇧": "British English",
     "🇧🇷": "Português Brasileiro",
-    "🇨zechia": "Čeština", # Note corrective mineure pour la clé interne
+    "🇨🇿": "Čeština",
     "🇩🇰": "Dansk",
     "🇩🇪": "Deutsch",
     "🇪🇸": "Español",
