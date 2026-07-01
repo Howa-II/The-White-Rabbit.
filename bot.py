@@ -195,6 +195,15 @@ class TranslateView(discord.ui.View):
                 display.append(f"{v} {LANG_EMOJIS[v]}")
         return ' + '.join(display) if display else None
 
+    def _format_embed_field(self, title: str, content: str) -> str:
+        """Gère dynamiquement le saut de ligne si le contenu dépasse la limite ou a un saut de ligne."""
+        cleaned_content = content.strip()
+        inline_test = f"**{title}** {cleaned_content}"
+        
+        if "\n" in cleaned_content or len(inline_test) > 40:
+            return f"**{title}**\n{cleaned_content}"
+        return inline_test
+
     def _update_lang(self, new_emoji, from_keys):
         if new_emoji in self.selected_values:
             self.selected_values.remove(new_emoji)
@@ -206,15 +215,17 @@ class TranslateView(discord.ui.View):
         display_str = self._build_display()
         short_text = f"*{self.original_text[:80]}{'...' if len(self.original_text) > 80 else ''}*"
         
-        # Création de l'embed avec la couleur FF0058
         embed = discord.Embed(title='[ "TRANSLATER". ] *', color=0xFF0058)
-        embed.add_field(name="Message :", value=short_text, inline=False)
+        
+        # Application de la règle de saut de ligne sur Message :
+        message_field = self._format_embed_field("Message :", short_text)
         
         if display_str is None:
-            embed.description = "Please,\nSelect At Least one Option, then Confirm"
+            embed.description = f"{message_field}\n\nPlease,\nSelect At Least one Option, then Confirm"
         else:
-            embed.add_field(name="Selection :", value=display_str, inline=False)
-            embed.description = "Confirm"
+            # Application de la règle de saut de ligne sur Selection :
+            selection_field = self._format_embed_field("Selection :", display_str)
+            embed.description = f"{message_field}\n\n{selection_field}\n\nConfirm"
             
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -363,11 +374,12 @@ async def translate_context_menu(interaction: discord.Interaction, message: disc
 
     view = TranslateView(original_text=message.content, message_ref=message, invoker_id=interaction.user.id)
     
-    # Création de l'embed initial avec la couleur FF0058
     short_text = f"*{message.content[:80]}{'...' if len(message.content) > 80 else ''}*"
     embed = discord.Embed(title='[ "TRANSLATER". ] *', color=0xFF0058)
-    embed.add_field(name="Message :", value=short_text, inline=False)
-    embed.description = "Please,\nSelect At Least one Option, then Confirm"
+    
+    # Application de la règle de saut de ligne sur le Message initial
+    message_field = view._format_embed_field("Message :", short_text)
+    embed.description = f"{message_field}\n\nPlease,\nSelect At Least one Option, then Confirm"
 
     await interaction.response.send_message(
         embed=embed,
@@ -388,4 +400,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(DISCORD_TOKEN)
-            
+                    
